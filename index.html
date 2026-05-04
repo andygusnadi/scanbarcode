@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Scan Barcode - Auto Izin Kamera</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Library scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 10px;
+            background: #f2f2f2;
+        }
+        #reader {
+            width: 100%;
+            max-width: 350px;
+            margin: auto;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background: #000;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .msg {
+            margin-top: 10px;
+            color: red;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Scan Barcode</h2>
+
+<div id="reader"></div>
+
+<input type="text" id="result" placeholder="Hasil barcode muncul di sini" readonly>
+
+<div class="msg" id="message"></div>
+
+<button onclick="startScanner()">Start Ulang Kamera</button>
+
+<script>
+let html5QrCode;
+
+// Auto minta izin kamera saat halaman dibuka
+window.onload = function() {
+    requestCameraPermission();
+};
+
+function requestCameraPermission() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+        // stop stream dulu, hanya untuk izin
+        stream.getTracks().forEach(track => track.stop());
+        startScanner();
+    })
+    .catch(err => {
+        document.getElementById("message").innerHTML =
+            "❌ Izin kamera ditolak. Silakan aktifkan kamera di pengaturan browser.";
+        console.error(err);
+    });
+}
+
+function startScanner() {
+    document.getElementById("message").innerHTML = "";
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length) {
+            // pilih kamera belakang
+            let cameraId = devices[devices.length - 1].id;
+
+            html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                (decodedText) => {
+                    document.getElementById("result").value = decodedText;
+                    alert("Barcode berhasil: " + decodedText);
+                    stopScanner();
+                },
+                (errorMessage) => {
+                    console.log(errorMessage);
+                }
+            );
+        } else {
+            document.getElementById("message").innerHTML = "❌ Kamera tidak ditemukan.";
+        }
+    }).catch(err => {
+        document.getElementById("message").innerHTML =
+            "❌ Tidak bisa mengakses kamera: " + err;
+    });
+}
+
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode.clear();
+        });
+    }
+}
+</script>
+
+</body>
+</html>
